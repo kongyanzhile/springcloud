@@ -1,0 +1,36 @@
+# 应用服务 WEB 访问端口
+server:
+  port: 8888
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: springcloud-consumer
+          uri: http://localhost:8081
+          predicates:
+            - Path=/ware/**
+        - id: springcloud-provider
+          uri: http://localhost:8080
+          predicates:
+            - Path=/product/**
+        - id: springcloud-provider
+          uri: http://localhost:8083
+          predicates:
+            - Path=/user/**
+  application:
+    name: service-gateway
+  data:
+    redis:
+      host: localhost
+      port: 6379
+app:
+  auth:
+    noauthurl:
+      - /css/**
+      - /js/**
+      - /img/**
+      - /user/**
+    authurl:
+      - /ware/**
+      - /product/**

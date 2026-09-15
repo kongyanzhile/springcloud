@@ -1,0 +1,15 @@
+package com.example.commonfegin.povider;
+
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+
+@Component
+@FeignClient(value = "springcloud-provider", fallbackFactory = ProductFeginFallbackFactory.class, url = "http://localhost:8080")
+public interface ProductFegin {
+
+    @GetMapping("/product/get/{id}")
+    String getProduct(@PathVariable Integer id);
+}

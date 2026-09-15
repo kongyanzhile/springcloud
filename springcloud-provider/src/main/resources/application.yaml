@@ -1,0 +1,16 @@
+# 应用服务 WEB 访问端口
+server:
+  port: 8080
+
+spring:
+  main:
+    lazy-initialization: false # 全局禁用懒加载（谨慎！可能增加启动时间）
+
+  application:
+    name: springcloud-provider
+dubbo:
+  application:
+    name: springcloud-provider
+  protocol:
+    name: dubbo
+    port: 20880

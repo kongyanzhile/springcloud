@@ -1,0 +1,26 @@
+# 应用服务 WEB 访问端口
+server:
+  port: 8081
+
+spring:
+  main:
+    lazy-initialization: false # 全局禁用懒加载（谨慎！可能增加启动时间）
+  application:
+    name: springcloud-consumer
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      httpclient:
+        enabled: true
+        max-connections: 200
+        max-connections-per-route: 50
+        connection-timeout: 2000
+    loadbalancer:
+      enabled: true
+      eager-load:
+        clients: springcloud-provider
+dubbo:
+  application:
+    name: springcloud-consumer
+    qos-port: 22222
