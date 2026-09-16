@@ -1,0 +1,15 @@
+# 应用服务 WEB 访问端口
+server:
+  port: 8085
+
+spring:
+  elasticsearch:
+    uris: http://192.168.184.135:9200
+    username: elastic
+    password: VyFZOiFT5q*wLrw29-S4
+
+  datasource:
+    username: postgres
+    password: root
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/springcloud?useSSL=false&characterEncoding=UTF8
