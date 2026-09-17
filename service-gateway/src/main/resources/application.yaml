@@ -5,19 +5,35 @@ server:
 spring:
   cloud:
     gateway:
-      routes:
-        - id: springcloud-consumer
-          uri: http://localhost:8081
-          predicates:
-            - Path=/ware/**
-        - id: springcloud-provider
-          uri: http://localhost:8080
-          predicates:
-            - Path=/product/**
-        - id: springcloud-provider
-          uri: http://localhost:8083
-          predicates:
-            - Path=/user/**
+#      routes:
+#        - id: springcloud-consumer
+#          uri: http://localhost:8081
+#          predicates:
+#            - Path=/ware/**
+#        - id: springcloud-provider
+#          uri: http://localhost:8080
+#          predicates:
+#            - Path=/product/**
+#        - id: springcloud-provider
+#          uri: http://localhost:8083
+#          predicates:
+#            - Path=/user/**
+      server:
+        webflux:
+          routes:
+          - id: springcloud-consumer
+            uri: http://localhost:8081
+            predicates:
+              - Path=/ware/**
+          - id: springcloud-provider
+            uri: http://localhost:8080
+            predicates:
+              - Path=/product/**
+          - id: springcloud-provider
+            uri: http://localhost:8083
+            predicates:
+              - Path=/user/**
+
   application:
     name: service-gateway
   data:
