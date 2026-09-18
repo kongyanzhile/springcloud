@@ -1,15 +1,23 @@
 # 应用服务 WEB 访问端口
 server:
-  port: 8085
+  port: 8088
+
 
 spring:
+  application:
+    name: springcloud-search
   elasticsearch:
     uris: http://192.168.184.135:9200
     username: elastic
     password: VyFZOiFT5q*wLrw29-S4
-
-  datasource:
-    username: postgres
-    password: root
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/springcloud?useSSL=false&characterEncoding=UTF8
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP
+      - optional:nacos:common-postgrepsql.yaml?group=DEFAULT_GROUP
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.184.135:8848
+      config:
+        server-addr: 192.168.184.135:8848
+        file-extension: yaml

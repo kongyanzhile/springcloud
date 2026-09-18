@@ -3,12 +3,9 @@ package com.example.springcloudconsumer.contoller;
 import com.example.commonutil.config.UserContext;
 import com.example.springcloudconsumer.service.WareImpl;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Enumeration;
 
 /**
  * Ware<br>
@@ -18,7 +15,7 @@ import java.util.Enumeration;
  */
 @RestController
 @RequestMapping("/ware")
-public class Warehouse {
+public class WarehouseController {
 
     @Resource
     private WareImpl ware;

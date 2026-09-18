@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 @Component
-@FeignClient(value = "springcloud-provider", fallbackFactory = ProductFeginFallbackFactory.class, url = "http://localhost:8080")
+@FeignClient(value = "springcloud-provider", fallbackFactory = ProductFeginFallbackFactory.class)
 public interface ProductFegin {
 
     @GetMapping("/product/get/{id}")

@@ -12,3 +12,14 @@ spring:
 
   application:
     name: springcloud-user
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP
+      - optional:nacos:common-postgrepsql.yaml?group=DEFAULT_GROUP
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.184.135:8848
+      config:
+        server-addr: 192.168.184.135:8848
+        file-extension: yaml

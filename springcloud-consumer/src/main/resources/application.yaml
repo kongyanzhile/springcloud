@@ -7,6 +7,10 @@ spring:
     lazy-initialization: false # 全局禁用懒加载（谨慎！可能增加启动时间）
   application:
     name: springcloud-consumer
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP
+      - optional:nacos:common-postgrepsql.yaml?group=DEFAULT_GROUP
   cloud:
     openfeign:
       circuitbreaker:
@@ -20,6 +24,12 @@ spring:
       enabled: true
       eager-load:
         clients: springcloud-provider
+    nacos:
+      discovery:
+        server-addr: 192.168.184.135:8848
+      config:
+        server-addr: 192.168.184.135:8848
+        file-extension: yaml
 dubbo:
   application:
     name: springcloud-consumer

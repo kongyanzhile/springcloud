@@ -3,7 +3,16 @@ server:
   port: 8888
 
 spring:
+  config:
+    import:
+      - optional:nacos:${spring.application.name}.yaml?group=DEFAULT_GROUP
   cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.184.135:8848
+      config:
+        server-addr: 192.168.184.135:8848
+        file-extension: yaml
     gateway:
 #      routes:
 #        - id: springcloud-consumer
@@ -29,7 +38,7 @@ spring:
             uri: http://localhost:8080
             predicates:
               - Path=/product/**
-          - id: springcloud-provider
+          - id: springcloud-user
             uri: http://localhost:8083
             predicates:
               - Path=/user/**
@@ -47,6 +56,8 @@ app:
       - /js/**
       - /img/**
       - /user/**
+#      - /ware/**
+#      - /product/**
     authurl:
       - /ware/**
       - /product/**

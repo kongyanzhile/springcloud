@@ -5,6 +5,18 @@
     <groupId>com.example</groupId>
     <artifactId>common-util</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>9</source>
+                    <target>9</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <name>common-util</name>
     <description>common-util</description>
     <properties>
