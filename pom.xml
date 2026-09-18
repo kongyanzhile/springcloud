@@ -19,6 +19,7 @@
         <module>dubbo-api</module>
         <module>common-util</module>
         <module>common-pojo</module>
+        <module>common</module>
     </modules>
 
     <parent>
