@@ -1,6 +1,6 @@
 package com.example.springcloudprovider.controller;
 
-import com.example.commonutil.config.UserContext;
+import com.example.common.feigin.config.UserContext;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

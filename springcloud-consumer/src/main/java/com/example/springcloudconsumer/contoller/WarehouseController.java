@@ -1,6 +1,6 @@
 package com.example.springcloudconsumer.contoller;
 
-import com.example.commonutil.config.UserContext;
+import com.example.common.feigin.config.UserContext;
 import com.example.springcloudconsumer.service.WareImpl;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -15,10 +15,6 @@
         <module>springcloud-consumer</module>
         <module>springcloud-search</module>
         <module>springcloud-user</module>
-        <module>common-fegin</module>
-        <module>dubbo-api</module>
-        <module>common-util</module>
-        <module>common-pojo</module>
         <module>common</module>
     </modules>
 

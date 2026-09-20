@@ -1,6 +1,6 @@
 package com.example.springcloudconsumer.service;
 
-import com.example.commonfegin.povider.ProductFegin;
+import com.example.common.feigin.ProductFegin;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
