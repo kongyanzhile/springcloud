@@ -15,6 +15,7 @@
         <module>springcloud-consumer</module>
         <module>springcloud-search</module>
         <module>springcloud-user</module>
+        <module>springcloud-talk</module>
         <module>common</module>
     </modules>
 

@@ -7,7 +7,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableFeignClients
-@ComponentScan(basePackages = {"com.example.springcloudprovider", "com.example.commonutil"})
+@ComponentScan(basePackages = {"com.example.springcloudprovider", "com.example.common"})
 public class SpringcloudProviderApplication {
 
     public static void main(String[] args) {

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket 测试页面</title>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { padding: 20px; background-color: #f5f7fa; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #2c3e50; font-size: 18px; border-bottom: 2px solid #3498db; padding-bottom: 8px; display: inline-block; }
+        .form-group { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        label { width: 100px; font-weight: bold; font-size: 14px; }
+        input[type="text"] { flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; outline: none; }
+        input[type="text"]:focus { border-color: #3498db; }
+        button { padding: 8px 16px; border: none; background-color: #3498db; color: white; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #2980b9; }
+        button.danger { background-color: #e74c3c; }
+        button.danger:hover { background-color: #c0392b; }
+        .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .status.online { background-color: #2ecc71; color: white; }
+        .status.offline { background-color: #95a5a6; color: white; }
+        #log-container { height: 250px; overflow-y: auto; background-color: #1e1e1e; color: #00ff66; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px; line-height: 1.5; }
+        .log-item { margin-bottom: 4px; word-break: break-all; }
+        .log-time { color: #888; margin-right: 8px; }
+        .log-type-in { color: #00ffff; }
+        .log-type-out { color: #ff00ff; }
+        .log-type-sys { color: #e67e22; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>WebSocket 功能测试台</h1>
+
+    <!-- 1. 连接设置 -->
+    <div class="card">
+        <h2>1. 连接管理</h2>
+        <div class="form-group">
+            <label>当前窗口 SID:</label>
+            <!-- 支持 Thymeleaf 语法动态获取，也支持前端手动输入 -->
+            <input type="text" id="sid" th:value="${userId}" placeholder="请输入客户端 SID (如: 1001)">
+            <span id="connectStatus" class="status offline">未连接</span>
+        </div>
+        <div class="form-group">
+            <label>WS 服务地址:</label>
+            <input type="text" id="wsUrl" value="ws://localhost:8080/api/websocket/">
+            <button id="btnConnect" onclick="connect()">建立连接</button>
+            <button id="btnDisconnect" onclick="disconnect()" class="danger" disabled>断开连接</button>
+        </div>
+    </div>
+
+    <!-- 2. WebSocket 消息发送（全员广播） -->
+    <div class="card">
+        <h2>2. WebSocket 客户端发消息 (广播模式)</h2>
+        <div class="form-group">
+            <input type="text" id="wsMessage" placeholder="输入发送给服务端（以及广播给所有人）的消息...">
+            <button onclick="sendWsMessage()">通过 WS 发送</button>
+        </div>
+    </div>
+
+    <!-- 3. HTTP 接口推送测试 -->
+    <div class="card">
+        <h2>3. HTTP REST 接口点对点推送测试</h2>
+        <div class="form-group">
+            <label>目标 SID:</label>
+            <input type="text" id="targetSid" placeholder="要推送给哪个 SID (如: 1001)">
+        </div>
+        <div class="form-group">
+            <label>推送内容:</label>
+            <input type="text" id="pushMessage" placeholder="要推送的文本内容">
+            <button onclick="sendHttpPush()">调用 HTTP 接口推送</button>
+        </div>
+    </div>
+
+    <!-- 4. 日志输出窗口 -->
+    <div class="card">
+        <h2>4. 实时日志监控</h2>
+        <button onclick="clearLog()" style="float: right; margin-top: -35px; background: #7f8c8d;">清空日志</button>
+        <div id="log-container"></div>
+    </div>
+</div>
+
+<script>
+    let socket = null;
+
+    // 页面加载时自动填入默认 SID（若后端传值为空则随机生成一个）
+    window.onload = function() {
+        const sidInput = document.getElementById('sid');
+        if (!sidInput.value) {
+            sidInput.value = 'user_' + Math.floor(Math.random() * 8999 + 1000);
+        }
+    };
+
+    // 建立连接
+    function connect() {
+        const sid = document.getElementById('sid').value.trim();
+        let baseUrl = document.getElementById('wsUrl').value.trim();
+
+        if (!sid) {
+            alert("请输入 SID！");
+            return;
+        }
+
+        if (!baseUrl.endsWith('/')) {
+            baseUrl += '/';
+        }
+
+        const fullUrl = baseUrl + sid;
+        addLog(`正在尝试连接: ${fullUrl}`, 'sys');
+
+        try {
+            socket = new WebSocket(fullUrl);
+
+            socket.onopen = function() {
+                addLog(`[连接成功] SID: ${sid}`, 'sys');
+                document.getElementById('connectStatus').innerText = '已连接';
+                document.getElementById('connectStatus').className = 'status online';
+                document.getElementById('btnConnect').disabled = true;
+                document.getElementById('btnDisconnect').disabled = false;
+                document.getElementById('sid').disabled = true;
+            };
+
+            socket.onmessage = function(event) {
+                addLog(`[收到消息] ${event.data}`, 'in');
+            };
+
+            socket.onclose = function() {
+                addLog(`[连接已关闭]`, 'sys');
+                resetStatus();
+            };
+
+            socket.onerror = function(error) {
+                addLog(`[发生错误] ${JSON.stringify(error)}`, 'sys');
+                resetStatus();
+            };
+
+        } catch (e) {
+            addLog(`[连接异常] ${e.message}`, 'sys');
+        }
+    }
+
+    // 断开连接
+    function disconnect() {
+        if (socket) {
+            socket.close();
+        }
+    }
+
+    // 通过 WebSocket 发送消息
+    function sendWsMessage() {
+        const msgInput = document.getElementById('wsMessage');
+        const message = msgInput.value;
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            alert("WebSocket 未连接！");
+            return;
+        }
+        if (!message) {
+            alert("请输入要发送的消息！");
+            return;
+        }
+        socket.send(message);
+        addLog(`[发送 WS 消息] ${message}`, 'out');
+        msgInput.value = '';
+    }
+
+    // 调用 HTTP 接口推送消息
+    function sendHttpPush() {
+        const targetSid = document.getElementById('targetSid').value.trim();
+        const message = document.getElementById('pushMessage').value;
+
+        if (!targetSid || !message) {
+            alert("请填写目标 SID 和推送内容！");
+            return;
+        }
+
+        // 注意：根据你的 Controller 路径组合，默认映射路径是 /api/socket/socket/push/{cid}
+        const url = `/api/socket/socket/push/${encodeURIComponent(targetSid)}?message=${encodeURIComponent(message)}`;
+
+        addLog(`[发起 HTTP 请求] POST/GET -> ${url}`, 'sys');
+
+        fetch(url, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                addLog(`[HTTP 接口返回] ${JSON.stringify(data)}`, 'sys');
+            })
+            .catch(err => {
+                addLog(`[HTTP 请求失败] ${err.message}`, 'sys');
+            });
+    }
+
+    // 重置页面状态
+    function resetStatus() {
+        document.getElementById('connectStatus').innerText = '未连接';
+        document.getElementById('connectStatus').className = 'status offline';
+        document.getElementById('btnConnect').disabled = false;
+        document.getElementById('btnDisconnect').disabled = true;
+        document.getElementById('sid').disabled = false;
+    }
+
+    // 打印日志
+    function addLog(msg, type) {
+        const logContainer = document.getElementById('log-container');
+        const time = new Date().toLocaleTimeString();
+        let typeClass = 'log-type-sys';
+        if (type === 'in') typeClass = 'log-type-in';
+        if (type === 'out') typeClass = 'log-type-out';
+
+        const logDiv = document.createElement('div');
+        logDiv.className = 'log-item';
+        logDiv.innerHTML = `<span class="log-time">[${time}]</span> <span class="${typeClass}">${escapeHtml(msg)}</span>`;
+        logContainer.appendChild(logDiv);
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function clearLog() {
+        document.getElementById('log-container').innerHTML = '';
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+</script>
+</body>
+</html>

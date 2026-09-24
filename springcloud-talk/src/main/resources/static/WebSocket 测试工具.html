@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WebSocket 测试工具</title>
+<style>
+:root{
+  --bg:#f5f6f8;--card:#fff;--border:#e2e4e8;--text:#1a1d23;--muted:#6b7280;
+  --accent:#3b6ef6;--accent-hover:#2f5ce0;--ok:#16a34a;--err:#dc2626;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171c;--card:#1e2128;--border:#2c303a;--text:#e6e8ec;--muted:#9aa1ad;
+  }
+}
+:root[data-theme="dark"]{--bg:#15171c;--card:#1e2128;--border:#2c303a;--text:#e6e8ec;--muted:#9aa1ad;}
+*{box-sizing:border-box;}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 40px;}
+h1{font-size:18px;margin:8px 0 16px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+.row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.row>div{flex:1;min-width:120px;}
+input{
+  width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;
+  background:var(--bg);color:var(--text);font-size:14px;
+}
+button{
+  padding:8px 16px;border:none;border-radius:6px;background:var(--accent);color:#fff;
+  font-size:14px;cursor:pointer;
+}
+button:hover{background:var(--accent-hover);}
+button:disabled{opacity:.5;cursor:not-allowed;}
+button.secondary{background:transparent;border:1px solid var(--border);color:var(--text);}
+.status{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);}
+.dot.on{background:var(--ok);}
+.dot.off{background:var(--err);}
+#log{
+  height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;
+  padding:10px;background:var(--bg);font-family:var(--mono);font-size:12.5px;line-height:1.6;
+}
+.line{margin-bottom:4px;word-break:break-all;}
+.tag{display:inline-block;min-width:44px;font-weight:600;}
+.tag.recv{color:var(--ok);}
+.tag.send{color:var(--accent);}
+.tag.sys{color:var(--muted);}
+.tag.err{color:var(--err);}
+.sendrow{display:flex;gap:8px;}
+.sendrow input{flex:1;}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>WebSocket 测试工具</h1>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>WebSocket 地址</label>
+        <input id="wsUrl" value="ws://localhost:8087/api/websocket/">
+      </div>
+      <div style="flex:0 0 140px;">
+        <label>sid</label>
+        <input id="sid" value="test001">
+      </div>
+    </div>
+    <div class="row" style="align-items:center;justify-content:space-between;">
+      <div class="status"><span id="dot" class="dot off"></span><span id="statusText">未连接</span></div>
+      <div style="display:flex;gap:8px;">
+        <button id="connectBtn">连接</button>
+        <button id="disconnectBtn" class="secondary" disabled>断开</button>
+        <button id="clearBtn" class="secondary">清空日志</button>
+      </div>
+    </div>
+    <div class="hint">完整地址 = 上面地址 + sid，例如 ws://localhost:8081/api/websocket/test001</div>
+  </div>
+
+  <div class="card">
+    <div id="log"></div>
+    <div class="sendrow" style="margin-top:10px;">
+      <input id="msgInput" placeholder="输入要发送的消息，回车发送" disabled>
+      <button id="sendBtn" disabled>发送</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>通过后端 HTTP 接口推送（对应 SystemController /api/socket/push/{cid}）</label>
+    <div class="row">
+      <div>
+        <label>HTTP 基地址</label>
+        <input id="httpBase" value="http://localhost:8087">
+      </div>
+      <div>
+        <label>目标 cid（sid）</label>
+        <input id="pushCid" value="test001">
+      </div>
+    </div>
+    <div class="sendrow">
+      <input id="pushMsg" placeholder="要推送的消息内容">
+      <button id="pushBtn">推送</button>
+    </div>
+    <div class="hint">此按钮会发起跨端口的 POST 请求，如目标服务未配置 CORS 可能会被浏览器拦截；此时建议用 Postman/curl 测试，或只在同源页面测试。</div>
+  </div>
+</div>
+
+<script>
+let ws = null;
+
+const $ = id => document.getElementById(id);
+const logEl = $('log'), dot = $('dot'), statusText = $('statusText');
+const connectBtn = $('connectBtn'), disconnectBtn = $('disconnectBtn');
+const msgInput = $('msgInput'), sendBtn = $('sendBtn');
+
+function addLine(tag, cls, text){
+  const div = document.createElement('div');
+  div.className = 'line';
+  const time = new Date().toLocaleTimeString();
+  div.innerHTML = `<span class="tag ${cls}">[${tag}]</span> ${time} - ${escapeHtml(text)}`;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function setConnected(on){
+  dot.className = 'dot ' + (on ? 'on' : 'off');
+  statusText.textContent = on ? '已连接' : '未连接';
+  connectBtn.disabled = on;
+  disconnectBtn.disabled = !on;
+  msgInput.disabled = !on;
+  sendBtn.disabled = !on;
+}
+
+$('connectBtn').addEventListener('click', () => {
+  const base = $('wsUrl').value.trim();
+  const sid = $('sid').value.trim();
+  if(!base || !sid){ addLine('ERR','err','请填写地址和 sid'); return; }
+  const url = base + sid;
+  try{
+    ws = new WebSocket(url);
+  }catch(e){
+    addLine('ERR','err','创建连接失败: ' + e.message);
+    return;
+  }
+  addLine('SYS','sys','正在连接 ' + url);
+
+  ws.onopen = () => { setConnected(true); addLine('SYS','sys','连接已建立'); };
+  ws.onmessage = (evt) => { addLine('RECV','recv', evt.data); };
+  ws.onerror = () => { addLine('ERR','err','连接发生错误（检查地址/端口/跨域配置）'); };
+  ws.onclose = (evt) => {
+    setConnected(false);
+    addLine('SYS','sys',`连接已关闭 code=${evt.code}`);
+  };
+});
+
+$('disconnectBtn').addEventListener('click', () => {
+  if(ws) ws.close();
+});
+
+function doSend(){
+  const val = msgInput.value;
+  if(!val || !ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(val);
+  addLine('SEND','send', val);
+  msgInput.value = '';
+}
+sendBtn.addEventListener('click', doSend);
+msgInput.addEventListener('keydown', e => { if(e.key === 'Enter') doSend(); });
+
+$('clearBtn').addEventListener('click', () => { logEl.innerHTML = ''; });
+
+$('pushBtn').addEventListener('click', async () => {
+  const base = $('httpBase').value.trim();
+  const cid = $('pushCid').value.trim();
+  const message = $('pushMsg').value;
+  if(!base || !cid){ addLine('ERR','err','请填写 HTTP 基地址和 cid'); return; }
+  const url = `${base}/api/socket/push/${encodeURIComponent(cid)}?message=${encodeURIComponent(message)}`;
+  addLine('SYS','sys','推送请求: ' + url);
+  try{
+    const res = await fetch(url, { method: 'POST' });
+    const text = await res.text();
+    addLine('SYS','sys','推送响应: ' + text);
+  }catch(e){
+    addLine('ERR','err','推送失败: ' + e.message + '（很可能是跨域被拦截）');
+  }
+});
+</script>
+</body>
+</html>
